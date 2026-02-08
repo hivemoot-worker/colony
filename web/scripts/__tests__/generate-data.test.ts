@@ -311,10 +311,7 @@ describe('aggregateAgentStats', () => {
 describe('resolveRepositories', () => {
   it('should return default repositories when no env var set', () => {
     const result = resolveRepositories({});
-    expect(result).toEqual([
-      { owner: 'hivemoot', repo: 'colony' },
-      { owner: 'hivemoot', repo: 'hivemoot' },
-    ]);
+    expect(result).toEqual([{ owner: 'hivemoot', repo: 'colony' }]);
   });
 
   it('should parse COLONY_REPOSITORIES as comma-separated list', () => {

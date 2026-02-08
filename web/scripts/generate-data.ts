@@ -20,7 +20,7 @@ const OUTPUT_FILE = join(OUTPUT_DIR, 'activity.json');
 const GITHUB_API = 'https://api.github.com';
 const DEFAULT_OWNER = 'hivemoot';
 const DEFAULT_REPO = 'colony';
-const DEFAULT_REPOSITORIES = ['hivemoot/colony', 'hivemoot/hivemoot'];
+const DEFAULT_REPOSITORIES = ['hivemoot/colony'];
 
 // Data types matching the schema from Issue #3 and #13 discussion
 export interface Commit {
@@ -329,13 +329,14 @@ export function mapCommits(
 
 async function fetchCommits(
   owner: string,
-  repo: string
+  repo: string,
+  slug: string
 ): Promise<{ commits: Commit[]; agents: Agent[] }> {
   const ghCommits = await fetchJson<GitHubCommit[]>(
     `/repos/${owner}/${repo}/commits?per_page=20`
   );
 
-  return mapCommits(ghCommits);
+  return mapCommits(ghCommits, slug);
 }
 
 export function mapIssues(
@@ -370,7 +371,8 @@ export function mapIssues(
 
 async function fetchIssues(
   owner: string,
-  repo: string
+  repo: string,
+  slug: string
 ): Promise<{
   issues: Issue[];
   rawIssues: GitHubIssue[];
@@ -385,7 +387,7 @@ async function fetchIssues(
     ),
   ]);
 
-  return mapIssues([...openIssues, ...closedIssues]);
+  return mapIssues([...openIssues, ...closedIssues], slug);
 }
 
 export function mapPullRequests(
@@ -424,7 +426,8 @@ export function mapPullRequests(
 
 async function fetchPullRequests(
   owner: string,
-  repo: string
+  repo: string,
+  slug: string
 ): Promise<{
   pullRequests: PullRequest[];
   agents: Agent[];
@@ -439,7 +442,7 @@ async function fetchPullRequests(
     ),
   ]);
 
-  return mapPullRequests([...openPRs, ...closedPRs]);
+  return mapPullRequests([...openPRs, ...closedPRs], slug);
 }
 
 async function fetchProposals(
@@ -693,7 +696,8 @@ export function mapEvents(
 
 async function fetchEvents(
   owner: string,
-  repo: string
+  repo: string,
+  slug: string
 ): Promise<{
   comments: Comment[];
   agents: Agent[];
@@ -702,7 +706,7 @@ async function fetchEvents(
     `/repos/${owner}/${repo}/events?per_page=50`
   );
 
-  return mapEvents(ghEvents, owner, repo);
+  return mapEvents(ghEvents, owner, repo, slug);
 }
 
 async function fetchRepoMetadata(
@@ -823,25 +827,15 @@ async function fetchRepoActivity(
   const [repoMetadata, commitResult, issueResult, prResult, eventResult] =
     await Promise.all([
       fetchRepoMetadata(owner, repo),
-      fetchCommits(owner, repo),
-      fetchIssues(owner, repo),
-      fetchPullRequests(owner, repo),
-      fetchEvents(owner, repo),
+      fetchCommits(owner, repo, slug),
+      fetchIssues(owner, repo, slug),
+      fetchPullRequests(owner, repo, slug),
+      fetchEvents(owner, repo, slug),
     ]);
 
-  // Tag entities with repository slug
-  const taggedCommits = commitResult.commits.map((c) => ({
-    ...c,
-    repository: slug,
-  }));
-  const taggedIssues = issueResult.issues.map((i) => ({
-    ...i,
-    repository: slug,
-  }));
-  const prMapped = prResult.pullRequests.map((pr) => ({
-    ...pr,
-    repository: slug,
-  }));
+  const taggedCommits = commitResult.commits;
+  const taggedIssues = issueResult.issues;
+  const prMapped = prResult.pullRequests;
   const proposals = await fetchProposals(
     owner,
     repo,
@@ -849,10 +843,7 @@ async function fetchRepoActivity(
     slug
   );
   await fetchPhaseTransitions(owner, repo, proposals);
-  const taggedComments = eventResult.comments.map((c) => ({
-    ...c,
-    repository: slug,
-  }));
+  const taggedComments = eventResult.comments;
 
   const openIssues = calculateOpenIssues(repoMetadata, prResult.pullRequests);
 
