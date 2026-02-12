@@ -1069,14 +1069,12 @@ export async function buildExternalVisibility(
     }
   };
 
-  const [rootRes, robotsRes, sitemapRes, activityRes, appleTouchIconRes] =
-    await Promise.all([
-      fetchWithTimeout(baseUrl),
-      fetchWithTimeout(`${baseUrl}/robots.txt`),
-      fetchWithTimeout(`${baseUrl}/sitemap.xml`),
-      fetchWithTimeout(`${baseUrl}/data/activity.json`),
-      fetchWithTimeout(`${baseUrl}/apple-touch-icon.png`),
-    ]);
+  const [rootRes, robotsRes, sitemapRes, activityRes] = await Promise.all([
+    fetchWithTimeout(baseUrl),
+    fetchWithTimeout(`${baseUrl}/robots.txt`),
+    fetchWithTimeout(`${baseUrl}/sitemap.xml`),
+    fetchWithTimeout(`${baseUrl}/data/activity.json`),
+  ]);
 
   // Root check
   checks.push({
@@ -1159,16 +1157,38 @@ export async function buildExternalVisibility(
           ? `Invalid og:image URL: ${ogImageRaw}`
           : 'Missing og:image metadata on deployed homepage',
   });
+  const appleTouchIconRaw = extractTagAttributeValue(
+    deployedRootHtml,
+    'link',
+    'rel',
+    'apple-touch-icon',
+    'href'
+  );
+  let appleTouchIconUrl = '';
+  if (appleTouchIconRaw) {
+    try {
+      appleTouchIconUrl = new URL(appleTouchIconRaw, `${baseUrl}/`).toString();
+    } catch {
+      appleTouchIconUrl = '';
+    }
+  }
+  const appleTouchIconRes = appleTouchIconUrl
+    ? await fetchWithTimeout(appleTouchIconUrl)
+    : null;
   checks.push({
     id: 'deployed-apple-touch-icon',
     label: 'Deployed apple-touch-icon reachable',
     ok: appleTouchIconRes?.status === 200,
     details:
       appleTouchIconRes?.status === 200
-        ? `GET ${baseUrl}/apple-touch-icon.png returned 200`
-        : `GET ${baseUrl}/apple-touch-icon.png returned ${
-            appleTouchIconRes?.status ?? 'no response'
-          }`,
+        ? `GET ${appleTouchIconUrl} returned 200`
+        : appleTouchIconUrl
+          ? `GET ${appleTouchIconUrl} returned ${
+              appleTouchIconRes?.status ?? 'no response'
+            }`
+          : appleTouchIconRaw
+            ? `Invalid apple-touch-icon URL: ${appleTouchIconRaw}`
+            : 'Missing apple-touch-icon metadata on deployed homepage',
   });
 
   // Robots check
