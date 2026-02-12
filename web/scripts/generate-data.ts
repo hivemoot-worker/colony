@@ -1158,19 +1158,33 @@ export async function buildExternalVisibility(
           : 'Missing og:image metadata on deployed homepage',
   });
 
-  const twitterImageRaw = extractTagAttributeValue(
-    deployedRootHtml,
-    'meta',
-    'name',
-    'twitter:image',
-    'content'
-  );
+  const twitterImageRaw =
+    extractTagAttributeValue(
+      deployedRootHtml,
+      'meta',
+      'name',
+      'twitter:image',
+      'content'
+    ) ||
+    extractTagAttributeValue(
+      deployedRootHtml,
+      'meta',
+      'name',
+      'twitter:image:src',
+      'content'
+    );
   let twitterImageUrl = '';
+  let twitterImageValidationError = '';
   if (twitterImageRaw) {
     try {
-      twitterImageUrl = new URL(twitterImageRaw, `${baseUrl}/`).toString();
+      const parsedTwitterImageUrl = new URL(twitterImageRaw);
+      if (parsedTwitterImageUrl.protocol === 'https:') {
+        twitterImageUrl = parsedTwitterImageUrl.toString();
+      } else {
+        twitterImageValidationError = `twitter:image must be absolute https URL: ${twitterImageRaw}`;
+      }
     } catch {
-      twitterImageUrl = '';
+      twitterImageValidationError = `twitter:image must be absolute https URL: ${twitterImageRaw}`;
     }
   }
   const twitterImageRes = twitterImageUrl
@@ -1186,7 +1200,7 @@ export async function buildExternalVisibility(
       : twitterImageUrl
         ? `GET ${twitterImageUrl} returned ${twitterImageRes?.status ?? 'no response'}`
         : twitterImageRaw
-          ? `Invalid twitter:image URL: ${twitterImageRaw}`
+          ? twitterImageValidationError
           : 'Missing twitter:image metadata on deployed homepage',
   });
 
