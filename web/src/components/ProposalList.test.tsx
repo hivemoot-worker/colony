@@ -353,7 +353,7 @@ describe('ProposalList', () => {
       {
         id: 102,
         issueOrPrNumber: 2, // Different proposal
-        type: 'proposal' as const,
+        type: 'issue' as const,
         repo: 'hivemoot/colony',
         author: 'builder',
         body: 'Unrelated comment',
