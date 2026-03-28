@@ -8,6 +8,7 @@ import {
   resolveDeployedPageUrl,
   resolveRepositoryHomepage,
   resolveVisibilityRepository,
+  resolveVisibilityToken,
   resolveVisibilityUserAgent,
   type CheckResult,
   type VisibilityReport,
@@ -32,6 +33,37 @@ describe('resolveVisibilityUserAgent', () => {
         VISIBILITY_USER_AGENT: '   ',
       })
     ).toBe('colony-visibility-check');
+  });
+});
+
+describe('resolveVisibilityToken', () => {
+  it('returns GITHUB_TOKEN when it is set', () => {
+    expect(
+      resolveVisibilityToken({
+        GITHUB_TOKEN: 'actions-token',
+      } as NodeJS.ProcessEnv)
+    ).toBe('actions-token');
+  });
+
+  it('returns GH_TOKEN when GITHUB_TOKEN is missing', () => {
+    expect(
+      resolveVisibilityToken({
+        GH_TOKEN: 'cli-token',
+      } as NodeJS.ProcessEnv)
+    ).toBe('cli-token');
+  });
+
+  it('prefers GITHUB_TOKEN when both token variables are set', () => {
+    expect(
+      resolveVisibilityToken({
+        GITHUB_TOKEN: 'actions-token',
+        GH_TOKEN: 'cli-token',
+      } as NodeJS.ProcessEnv)
+    ).toBe('actions-token');
+  });
+
+  it('returns undefined when neither token variable is set', () => {
+    expect(resolveVisibilityToken({} as NodeJS.ProcessEnv)).toBeUndefined();
   });
 });
 
