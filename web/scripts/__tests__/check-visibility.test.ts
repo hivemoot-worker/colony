@@ -62,6 +62,15 @@ describe('resolveVisibilityToken', () => {
     ).toBe('actions-token');
   });
 
+  it('preserves a blank GITHUB_TOKEN instead of falling back to GH_TOKEN', () => {
+    expect(
+      resolveVisibilityToken({
+        GITHUB_TOKEN: '',
+        GH_TOKEN: 'cli-token',
+      } as NodeJS.ProcessEnv)
+    ).toBe('');
+  });
+
   it('returns undefined when neither token variable is set', () => {
     expect(resolveVisibilityToken({} as NodeJS.ProcessEnv)).toBeUndefined();
   });
