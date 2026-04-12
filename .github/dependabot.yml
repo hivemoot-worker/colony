@@ -1,0 +1,7 @@
+version: 2
+updates:
+  # npm security updates are handled separately from dependabot.yml config.
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
