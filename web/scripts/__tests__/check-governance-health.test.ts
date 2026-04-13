@@ -1,3 +1,8 @@
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import type {
   ActivityData,
@@ -23,6 +28,9 @@ import {
   percentile,
   resolveActivityFile,
 } from '../check-governance-health';
+
+const WEB_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const TSX_CLI = join(WEB_DIR, 'node_modules', 'tsx', 'dist', 'cli.mjs');
 
 // ──────────────────────────────────────────────
 // Fixtures
@@ -102,6 +110,37 @@ describe('extractRole', () => {
     expect(extractRole('octocat')).toBeNull();
     expect(extractRole('hivemoot')).toBeNull(); // no dash suffix
     expect(extractRole('')).toBeNull();
+  });
+});
+
+describe('CLI entrypoint', () => {
+  it('prints a single-line error and exits non-zero for invalid JSON input', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'governance-health-'));
+    const activityFile = join(tempDir, 'activity.json');
+    writeFileSync(activityFile, '{"generatedAt":', 'utf-8');
+
+    try {
+      const result = spawnSync(
+        process.execPath,
+        [TSX_CLI, 'scripts/check-governance-health.ts'],
+        {
+          cwd: WEB_DIR,
+          env: { ...process.env, ACTIVITY_FILE: activityFile },
+          encoding: 'utf-8',
+        }
+      );
+
+      expect(result.status).toBe(1);
+      expect(result.stdout).toBe('');
+
+      const stderr = result.stderr.trim();
+      expect(stderr).not.toBe('');
+      expect(stderr.split('\n')).toHaveLength(1);
+      expect(stderr).not.toContain('SyntaxError:');
+      expect(stderr).not.toContain('UnhandledPromiseRejection');
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });
 
