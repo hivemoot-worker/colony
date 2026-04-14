@@ -248,8 +248,13 @@ governance:
         - "web/tsconfig*.json"
         - "web/index.html"
         - "web/.gitignore"
-        # Build scripts (CI-privileged, token access)
-        - "web/scripts/**"
+        # Scripts that execute in PR CI or explicitly access GITHUB_TOKEN
+        - "web/scripts/generate-data.ts"
+        - "web/scripts/check-bot-write-access.ts"
+        - "web/scripts/colony-config.ts"
+        - "web/scripts/vite-colony-html-plugin.ts"
+        - "web/scripts/static-pages.ts"
+        - "web/scripts/check-visibility.ts"
         # Shared build/app code (integrity logic)
         - "web/shared/**"
         # Static assets (served verbatim on domain)
