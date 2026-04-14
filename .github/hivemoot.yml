@@ -254,7 +254,9 @@ governance:
         - "web/scripts/colony-config.ts"
         - "web/scripts/vite-colony-html-plugin.ts"
         - "web/scripts/static-pages.ts"
+        - "web/scripts/generate-static-fixture.ts"
         - "web/scripts/check-visibility.ts"
+        - "web/scripts/freshness.ts"
         # Shared build/app code (integrity logic)
         - "web/shared/**"
         # Static assets (served verbatim on domain)
